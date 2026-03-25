@@ -78,13 +78,13 @@ QString OzonScraper::resolveFetchScriptPath() const
         return QString::fromLocal8Bit(env);
 
     const QString appDir = QCoreApplication::applicationDirPath();
-    QString p = QDir(appDir).filePath(QStringLiteral("../selenium_test/ozon_fetch.py"));
+    QString p = QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py"));
     if (QFileInfo::exists(p))
         return QDir::cleanPath(p);
-    p = QDir::currentPath() + QStringLiteral("/selenium_test/ozon_fetch.py");
+    p = QDir::currentPath() + QStringLiteral("/scripts/ozon_fetch.py");
     if (QFileInfo::exists(p))
         return p;
-    return QDir::cleanPath(QDir(appDir).filePath(QStringLiteral("../selenium_test/ozon_fetch.py")));
+    return QDir::cleanPath(QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py")));
 }
 
 void OzonScraper::start(const QString& urlStr, int minPoints, int maxPoints)
@@ -105,7 +105,7 @@ void OzonScraper::start(const QUrl& url, int minPoints, int maxPoints)
     if (!QFileInfo::exists(scriptPath)) {
         emit finishedWithError(
             QStringLiteral("Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите "
-                           "selenium_test/ozon_fetch.py рядом с приложением."));
+                           "scripts/ozon_fetch.py рядом с приложением."));
         return;
     }
 

@@ -1,6 +1,6 @@
 # Ozon Scraper (Qt)
 
-Парсер товаров Ozon: **загрузка страницы** выполняется скриптом Python (`selenium_test/ozon_fetch.py`) с **undetected-chromedriver**; фильтрация, топ‑50 и интерфейс — на **C++/Qt Quick**.
+Парсер товаров Ozon: **загрузка страницы** выполняется скриптом Python (`scripts/ozon_fetch.py`) с **undetected-chromedriver**; фильтрация, топ‑50 и интерфейс — на **C++/Qt Quick**.
 
 ## Зависимости (Linux)
 
@@ -20,7 +20,7 @@ sudo apt install qt5-quick-demos
 
 ## Скрипт загрузки
 
-По умолчанию ищется файл `selenium_test/ozon_fetch.py` относительно каталога исполняемого файла (`build/../selenium_test/ozon_fetch.py`) или текущего каталога.
+По умолчанию ищется файл `scripts/ozon_fetch.py` относительно каталога исполняемого файла (`build/../scripts/ozon_fetch.py`) или текущего каталога.
 
 Переопределение пути:
 
@@ -39,7 +39,7 @@ make
 
 ## Запуск
 
-Из каталога `build` (чтобы находился `../selenium_test/ozon_fetch.py`):
+Из каталога `build` (чтобы находился `../scripts/ozon_fetch.py`):
 
 ```bash
 ./ozon_cpp
@@ -58,7 +58,7 @@ sudo apt install qml-module-qtquick2 qml-module-qtquick-controls2 qml-module-qtq
 ## Возможности
 
 - Загрузка страниц категорий и поиска Ozon через Python + undetected-chromedriver
-- Автоматический скролл и извлечение данных (логика совпадает с прежним JS)
+- Автоматический скролл и парсинг плиток (Python, см. `scripts/`)
 - Фильтрация по баллам за отзыв (мин/макс) на стороне C++
 - Топ-50 товаров по соотношению баллы/цена
 - Обновление таблицы в реальном времени

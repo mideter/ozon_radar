@@ -10,3 +10,4 @@ Makefile
 *.qm
 .qmake.stash
 .cursor/
+scripts/__pycache__/
