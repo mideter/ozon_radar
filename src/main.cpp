@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
+#include "shortcutlayoutfix.h"
 #include "ozonscraper.h"
 #include "productmodel.h"
 #include "product.h"
@@ -11,6 +12,9 @@ int main(int argc, char* argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication app(argc, argv);
+
+    ShortcutLayoutFixFilter shortcutLayoutFix(&app);
+    app.installEventFilter(&shortcutLayoutFix);
 
     OzonScraper scraper;
     ProductModel productModel;

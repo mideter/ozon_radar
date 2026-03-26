@@ -17,6 +17,8 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_executable(ozon_cpp
     ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/shortcutlayoutfix.cpp
+    ${SRC_DIR}/shortcutlayoutfix.h
     ${SRC_DIR}/product.h
     ${SRC_DIR}/product.cpp
     ${SRC_DIR}/productmodel.h
