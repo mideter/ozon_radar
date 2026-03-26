@@ -45,20 +45,21 @@ int parseDigitsGroup(const QString& numPart)
 
 int extractPriceFromPlain(const QString& text)
 {
-    static const QRegularExpression reRubBefore(
-        QStringLiteral(
-            u"(?:₽|руб\\.?|\\b)(?:\\s*)(\\d(?:[\\s\u00a0\u2009]*\\d)*)"),
-        QRegularExpression::CaseInsensitiveOption);
+    // Сначала «27 800 ₽». Не использовать (?:₽|руб|\\b)+цифры: \\b цепляется к первому числу («800» из «800 баллов»).
     static const QRegularExpression reRubAfter(
         QStringLiteral(u"(\\d(?:[\\s\u00a0\u2009]*\\d)*)\\s*₽"));
+    static const QRegularExpression reRubSignBeforeDigits(
+        QStringLiteral(
+            u"(?:₽|руб\\.?)(?:\\s*)(\\d(?:[\\s\u00a0\u2009]*\\d)*)"),
+        QRegularExpression::CaseInsensitiveOption);
     static const QRegularExpression reDigits(
         QStringLiteral(u"(\\d(?:[\\s\u00a0\u2009]*\\d)*)"));
 
-    QRegularExpressionMatch m = reRubBefore.match(text);
+    QRegularExpressionMatch m = reRubAfter.match(text);
     if (m.hasMatch())
         return parseDigitsGroup(m.captured(1));
 
-    m = reRubAfter.match(text);
+    m = reRubSignBeforeDigits.match(text);
     if (m.hasMatch())
         return parseDigitsGroup(m.captured(1));
 

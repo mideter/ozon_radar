@@ -101,13 +101,15 @@ void OzonScraper::start(const QUrl& url, int minPoints, int maxPoints)
 
     emit statusChanged(QStringLiteral("Загрузка страницы (Python)..."), -1, 0);
 
+    const QString pythonExe = qEnvironmentVariable("OZON_PYTHON", QStringLiteral("python3"));
     const QStringList args{scriptPath, url_.toString()};
-    process_->start(QStringLiteral("python3"), args);
+    process_->start(pythonExe, args);
     if (!process_->waitForStarted(5000)) {
         running_ = false;
         emit finishedWithError(
-            QStringLiteral("Не удалось запустить python3. Установите Python 3 и зависимости "
-                           "(python3-undetected-chromedriver)."));
+            QStringLiteral("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
+                           "(см. README).")
+                .arg(pythonExe));
     }
 }
 
