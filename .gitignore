@@ -1,4 +1,7 @@
 build/
+build-release/
+packaging/stage/
+*.deb
 *.o
 *.a
 *.so
