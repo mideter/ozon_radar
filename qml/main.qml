@@ -47,18 +47,31 @@ ApplicationWindow {
             // count >= 0 — статус с количеством товаров; иначе — простой текст (загрузка и т.п.)
             if (count >= 0) {
                 productsFoundCount = count
-                statusText1 = "Найдено товаров: " + count
+                statusText1 = msg
                 statusText2 = (typeof lastPrice === "number" && lastPrice > 0) ? (" | Цена последнего товара: " + root.formatPrice(lastPrice)) : ""
             } else {
-                if (productsFoundCount >= 0)
-                    return
                 statusText1 = msg
                 statusText2 = ""
             }
             statusColor = "#0EA5E9"
         }
 
-        function onFinishedSuccessfully(totalCount, elapsedText) {
+        function linksWordCountSuffix(urlCount) {
+            if (typeof urlCount !== "number" || urlCount <= 1)
+                return ""
+            var n10 = urlCount % 10
+            var n100 = urlCount % 100
+            var w
+            if (n10 === 1 && n100 !== 11)
+                w = "ссылка"
+            else if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20))
+                w = "ссылки"
+            else
+                w = "ссылок"
+            return " (" + urlCount + " " + w + ")"
+        }
+
+        function onFinishedSuccessfully(totalCount, elapsedText, urlCount) {
             isRunning = false
             progressBar.visible = false
             parseButton.enabled = true
@@ -66,7 +79,7 @@ ApplicationWindow {
             var n = (typeof totalCount === "number" && totalCount >= 0)
                 ? totalCount
                 : Math.max(0, productModel.totalCount)
-            statusText1 = "Успешно загружено " + n + " товаров"
+            statusText1 = "Успешно загружено " + n + " товаров" + linksWordCountSuffix(urlCount)
             statusText2 = elapsedText
         }
 
@@ -112,19 +125,29 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     spacing: 8
                     Text {
-                        text: "Ссылка на категорию или поиск"
+                        text: "Ссылки (по одной в строке)"
                         Layout.preferredWidth: 260
                         color: root.gray800
                     }
-                    TextField {
-                        id: urlEdit
+                    ScrollView {
+                        id: urlScrollView
                         Layout.fillWidth: true
-                        text: "https://www.ozon.ru/category/aksessuary-i-prinadlezhnosti-dlya-rybalki-11340/?category_was_predicted=true&deny_category_prediction=true&from_global=true&has_points_from_reviews=t&sorting=price&text=коромысло"
-                        color: root.gray800
-                        background: Rectangle {
-                            color: root.gray50
-                            border.color: root.gray200
-                            radius: 4
+                        Layout.minimumHeight: 120
+                        Layout.preferredHeight: 180
+                        clip: true
+
+                        TextArea {
+                            id: urlEdit
+                            width: urlScrollView.availableWidth
+                            wrapMode: TextArea.Wrap
+                            text: "https://www.ozon.ru/category/aksessuary-i-prinadlezhnosti-dlya-rybalki-11340/?category_was_predicted=true&deny_category_prediction=true&from_global=true&has_points_from_reviews=t&sorting=price&text=коромысло"
+                            color: root.gray800
+                            selectByMouse: true
+                            background: Rectangle {
+                                color: root.gray50
+                                border.color: root.gray200
+                                radius: 4
+                            }
                         }
                     }
                 }
@@ -473,11 +496,12 @@ ApplicationWindow {
     }
 
     function startParsing() {
-        var urlText = urlEdit.text.trim()
-        if (urlText === "")
-            urlText = urlEdit.text
-        if (urlText.indexOf("http") !== 0 && urlText.indexOf("https") !== 0)
-            urlText = "https://" + urlText
+        var urlText = urlEdit.text
+        if (urlText.indexOf("\n") < 0 && urlText.indexOf("\r") < 0) {
+            urlText = urlText.trim()
+            if (urlText !== "" && urlText.indexOf("http") !== 0 && urlText.indexOf("https") !== 0)
+                urlText = "https://" + urlText
+        }
 
         var minPoints = -1
         var maxPoints = -1

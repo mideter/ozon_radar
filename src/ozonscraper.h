@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QProcess>
 #include <QSet>
+#include <QStringList>
 #include <QUrl>
 #include <QVector>
 
@@ -25,7 +26,7 @@ public:
 signals:
     void statusChanged(const QString& message, int count, int lastPrice);
     void topProductsUpdated(const QVector<Product>& products, int totalCount);
-    void finishedSuccessfully(int totalCount, const QString& elapsedText);
+    void finishedSuccessfully(int totalCount, const QString& elapsedText, int urlCount);
     void finishedWithError(const QString& message);
 
 private slots:
@@ -34,6 +35,7 @@ private slots:
 
 private:
     QString resolveFetchScriptPath() const;
+    void launchCurrentUrlFetch();
     void appendStdout(const QByteArray& chunk);
     void handleJsonLine(const QByteArray& line);
     void onExtractResult(const QByteArray& jsonArrayUtf8);
@@ -51,10 +53,17 @@ private:
     bool running_ = false;
 
     QUrl url_;
+    QStringList allUrls_;
+    int currentUrlIndex_ = 0;
+    QString fetchScriptPath_;
+    QString pythonExe_;
     int minPoints_ = -1;
     int maxPoints_ = -1;
     QSet<QString> seenUrls_;
     QVector<Product> allProducts_;
     int lastTableCount_ = 0;
     int lastPrice_ = 0;
+    int productsAtCurrentUrlStart_ = 0;
+    int urlSessionCount_ = 1;
+    QString pendingPrevPageSummary_;
 };

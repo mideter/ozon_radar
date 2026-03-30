@@ -34,6 +34,24 @@ bool isValidProductUrl(const QString& url)
     return id.length() >= 3;
 }
 
+QStringList parseUrlsFromMultiline(const QString& text)
+{
+    QStringList out;
+    const QStringList rawLines = text.split(QChar('\n'));
+    for (QString line : rawLines) {
+        line = line.trimmed();
+        if (line.isEmpty())
+            continue;
+        if (!line.startsWith(QLatin1String("http://"), Qt::CaseInsensitive)
+            && !line.startsWith(QLatin1String("https://"), Qt::CaseInsensitive))
+            line = QStringLiteral("https://") + line;
+        const QUrl u = QUrl::fromUserInput(line);
+        if (u.isValid() && !u.scheme().isEmpty())
+            out.append(u.toString());
+    }
+    return out;
+}
+
 } // namespace
 
 OzonScraper::OzonScraper(QObject* parent)
@@ -68,54 +86,93 @@ QString OzonScraper::resolveFetchScriptPath() const
 
 void OzonScraper::start(const QString& urlStr, int minPoints, int maxPoints)
 {
-    const QUrl url = QUrl::fromUserInput(urlStr);
-    if (url.isValid())
-        start(url, minPoints, maxPoints);
-    else
-        emit finishedWithError(QStringLiteral("Некорректный URL."));
-}
-
-void OzonScraper::start(const QUrl& url, int minPoints, int maxPoints)
-{
     if (running_)
         return;
 
-    const QString scriptPath = resolveFetchScriptPath();
-    if (!QFileInfo::exists(scriptPath)) {
+    fetchScriptPath_ = resolveFetchScriptPath();
+    if (!QFileInfo::exists(fetchScriptPath_)) {
         emit finishedWithError(
             QStringLiteral("Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите "
                            "scripts/ozon_fetch.py рядом с приложением."));
         return;
     }
 
-    url_ = url;
+    const QStringList urls = parseUrlsFromMultiline(urlStr);
+    if (urls.isEmpty()) {
+        emit finishedWithError(QStringLiteral("Некорректные URL. Укажите по одной ссылке в строке."));
+        return;
+    }
+
+    allUrls_ = urls;
+    urlSessionCount_ = urls.size();
+    currentUrlIndex_ = 0;
     minPoints_ = minPoints;
     maxPoints_ = maxPoints;
     seenUrls_.clear();
     allProducts_.clear();
     lastTableCount_ = 0;
     lastPrice_ = 0;
+    pendingPrevPageSummary_.clear();
     stdoutBuffer_.clear();
     running_ = true;
     elapsedTimer_.start();
 
-    emit statusChanged(QStringLiteral("Загрузка страницы (Python)..."), -1, 0);
+    pythonExe_ = qEnvironmentVariable("OZON_PYTHON", QStringLiteral("python3"));
 
-    const QString pythonExe = qEnvironmentVariable("OZON_PYTHON", QStringLiteral("python3"));
-    const QStringList args{scriptPath, url_.toString()};
-    process_->start(pythonExe, args);
+    launchCurrentUrlFetch();
+    if (!running_)
+        return;
     if (!process_->waitForStarted(5000)) {
+        if (process_->state() != QProcess::NotRunning) {
+            process_->kill();
+            process_->waitForFinished(2000);
+        }
         running_ = false;
+        allUrls_.clear();
         emit finishedWithError(
             QStringLiteral("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
                            "(см. README).")
-                .arg(pythonExe));
+                .arg(pythonExe_));
     }
+}
+
+void OzonScraper::start(const QUrl& url, int minPoints, int maxPoints)
+{
+    if (!url.isValid()) {
+        emit finishedWithError(QStringLiteral("Некорректный URL."));
+        return;
+    }
+    start(url.toString(), minPoints, maxPoints);
+}
+
+void OzonScraper::launchCurrentUrlFetch()
+{
+    productsAtCurrentUrlStart_ = allProducts_.size();
+    stdoutBuffer_.clear();
+    url_ = QUrl(allUrls_.at(currentUrlIndex_));
+    const int total = allUrls_.size();
+    const int n = currentUrlIndex_ + 1;
+    if (total > 1) {
+        QString load = QStringLiteral("Загрузка страницы (%1 из %2)...").arg(n).arg(total);
+        if (!pendingPrevPageSummary_.isEmpty()) {
+            load = pendingPrevPageSummary_ + QStringLiteral(" → ") + load;
+            pendingPrevPageSummary_.clear();
+        }
+        emit statusChanged(load, -1, 0);
+    } else {
+        emit statusChanged(QStringLiteral("Загрузка страницы..."), -1, 0);
+    }
+
+    const QStringList args{fetchScriptPath_, url_.toString()};
+    process_->start(pythonExe_, args);
 }
 
 void OzonScraper::stop()
 {
     running_ = false;
+    pendingPrevPageSummary_.clear();
+    allUrls_.clear();
+    currentUrlIndex_ = 0;
     if (process_->state() != QProcess::NotRunning) {
         process_->kill();
         process_->waitForFinished(3000);
@@ -180,6 +237,35 @@ void OzonScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
         return;
     }
 
+    const int totalUrls = allUrls_.size();
+    const int doneIdx = currentUrlIndex_;
+    const int newUnique = allProducts_.size() - productsAtCurrentUrlStart_;
+    QString pageLine;
+    if (totalUrls > 1) {
+        pageLine = QStringLiteral("Страница %1 из %2: +%3 новых, всего %4")
+                       .arg(doneIdx + 1)
+                       .arg(totalUrls)
+                       .arg(newUnique)
+                       .arg(allProducts_.size());
+    }
+
+    currentUrlIndex_++;
+    if (currentUrlIndex_ < allUrls_.size()) {
+        pendingPrevPageSummary_ = pageLine;
+        launchCurrentUrlFetch();
+        if (!process_->waitForStarted(5000)) {
+            finishWithError(
+                QStringLiteral("Не удалось перезапустить Python (%1) для следующей ссылки.")
+                    .arg(pythonExe_));
+        }
+        return;
+    }
+
+    allUrls_.clear();
+    currentUrlIndex_ = 0;
+    if (!pageLine.isEmpty()) {
+        emit statusChanged(pageLine, allProducts_.size(), lastPrice_);
+    }
     finishWithSuccess();
 }
 
@@ -206,7 +292,7 @@ void OzonScraper::onExtractResult(const QByteArray& json)
         if (n == 1 || n - lastTableCount_ >= UPDATE_TABLE_EVERY_N) {
             lastTableCount_ = n;
             const QVector<Product> top = computeTop50(allProducts_);
-            emit statusChanged(QStringLiteral("Найдено товаров"), n, lastPrice_);
+            emit statusChanged(QStringLiteral("Найдено товаров: %1").arg(n), n, lastPrice_);
             emit topProductsUpdated(top, n);
         }
     }
@@ -270,6 +356,9 @@ QVector<Product> OzonScraper::computeTop50(const QVector<Product>& all) const
 void OzonScraper::finishWithError(const QString& message)
 {
     running_ = false;
+    pendingPrevPageSummary_.clear();
+    allUrls_.clear();
+    currentUrlIndex_ = 0;
     if (process_->state() != QProcess::NotRunning) {
         process_->kill();
         process_->waitForFinished(2000);
@@ -294,7 +383,7 @@ void OzonScraper::finishWithSuccess()
     }
 
     emit topProductsUpdated(top, total);
-    emit finishedSuccessfully(total, elapsed);
+    emit finishedSuccessfully(total, elapsed, urlSessionCount_);
 }
 
 QString OzonScraper::formatElapsed(qint64 ms) const
