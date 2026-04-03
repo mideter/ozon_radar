@@ -74,6 +74,11 @@ def run(url: str) -> None:
         page_loader = PageLoader(driver)
         page_loader.load(url)
 
+        try:
+            driver.minimize_window()
+        except Exception:
+            pass
+
         time.sleep(0.5)
         title = driver.title or ""
         body_text = ""
