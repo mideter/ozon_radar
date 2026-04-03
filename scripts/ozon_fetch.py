@@ -52,7 +52,7 @@ def collect_new_tiles(
     return out
 
 
-def run(url: str, headless: bool) -> None:
+def run(url: str) -> None:
     try:
         import undetected_chromedriver as uc
     except ImportError:
@@ -62,9 +62,6 @@ def run(url: str, headless: bool) -> None:
         )
 
     options = uc.ChromeOptions()
-    if headless:
-        options.add_argument("--headless=new")
-
     maj = detect_chrome_major_version()
     driver = (
         uc.Chrome(options=options, version_main=maj)
@@ -127,10 +124,9 @@ def run(url: str, headless: bool) -> None:
 def main() -> int:
     argp = argparse.ArgumentParser(description="Ozon fetch для Qt (NDJSON в stdout)")
     argp.add_argument("url", help="URL категории или поиска Ozon")
-    argp.add_argument("--headless", action="store_true", help="Headless Chromium")
     args = argp.parse_args()
     try:
-        run(args.url, args.headless)
+        run(args.url)
     except BrokenPipeError:
         return 0
     except SystemExit:
