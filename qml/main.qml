@@ -133,7 +133,8 @@ ApplicationWindow {
 
                         TextArea {
                             id: urlEdit
-                            width: urlScrollView.availableWidth
+                            anchors.left: parent.left
+                            anchors.right: parent.right
                             wrapMode: TextArea.Wrap
                             text: "https://www.ozon.ru/category/aksessuary-i-prinadlezhnosti-dlya-rybalki-11340/?category_was_predicted=true&deny_category_prediction=true&from_global=true&has_points_from_reviews=t&sorting=price&text=коромысло"
                             color: root.gray800
