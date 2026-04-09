@@ -6,7 +6,7 @@ import QtQuick.Layouts 1.15
 ApplicationWindow {
     id: root
     width: 850
-    height: 600
+    height: 1000
     visible: true
     title: "Парсер товаров Ozon"
 
