@@ -1,5 +1,4 @@
 """Модуль для поиска элементов товаров на странице (как в ozon_cpp/ozon_py)."""
-import time
 from typing import List
 
 from selenium.webdriver.common.by import By
@@ -101,18 +100,3 @@ class ElementFinder:
                 continue
         return out
 
-    def get_final_products_count(self) -> int:
-        self.driver.execute_script(
-            "window.scrollTo(0, document.body.scrollHeight);"
-        )
-        time.sleep(0.1)
-        return self.driver.execute_script(
-            """
-            var grids = document.querySelectorAll('div[data-widget="tileGridDesktop"]');
-            var productsCount = 0;
-            for (var i = 0; i < grids.length; i++) {
-                productsCount += grids[i].querySelectorAll('div.tile-root[data-index]').length;
-            }
-            return productsCount;
-        """
-        )
