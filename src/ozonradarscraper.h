@@ -11,13 +11,13 @@
 #include <QVector>
 
 
-class OzonScraper : public QObject
+class OzonRadarScraper : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit OzonScraper(QObject* parent = nullptr);
-    ~OzonScraper() override;
+    explicit OzonRadarScraper(QObject* parent = nullptr);
+    ~OzonRadarScraper() override;
 
     void start(const QUrl& url, int minPoints, int maxPoints);
     Q_INVOKABLE void start(const QString& urlStr, int minPoints, int maxPoints);

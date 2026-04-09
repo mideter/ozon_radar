@@ -1,4 +1,4 @@
-"""Модуль для нормализации и валидации URL товаров (как в ozon_cpp/ozon_py)."""
+"""Модуль для нормализации и валидации URL товаров (как в ozon_radar/ozon_py)."""
 from typing import Optional, Tuple
 
 

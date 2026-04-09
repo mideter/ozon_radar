@@ -1,4 +1,4 @@
-"""Модуль для управления прокруткой страницы (как в ozon_cpp/ozon_py)."""
+"""Модуль для управления прокруткой страницы (как в ozon_radar/ozon_py)."""
 import time
 from typing import Tuple
 

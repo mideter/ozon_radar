@@ -1,4 +1,4 @@
-#include "ozonscraper.h"
+#include "ozonradarscraper.h"
 #include "productcardparser.h"
 
 #include <algorithm>
@@ -54,21 +54,21 @@ QStringList parseUrlsFromMultiline(const QString& text)
 
 } // namespace
 
-OzonScraper::OzonScraper(QObject* parent)
+OzonRadarScraper::OzonRadarScraper(QObject* parent)
     : QObject(parent)
     , process_(new QProcess(this))
 {
-    connect(process_, &QProcess::readyReadStandardOutput, this, &OzonScraper::onProcessStdout);
+    connect(process_, &QProcess::readyReadStandardOutput, this, &OzonRadarScraper::onProcessStdout);
     connect(process_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &OzonScraper::onProcessFinished);
+            this, &OzonRadarScraper::onProcessFinished);
 }
 
-OzonScraper::~OzonScraper()
+OzonRadarScraper::~OzonRadarScraper()
 {
     stop();
 }
 
-QString OzonScraper::resolveFetchScriptPath() const
+QString OzonRadarScraper::resolveFetchScriptPath() const
 {
     const QByteArray env = qgetenv("OZON_FETCH_SCRIPT");
     if (!env.isEmpty())
@@ -84,7 +84,7 @@ QString OzonScraper::resolveFetchScriptPath() const
     return QDir::cleanPath(QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py")));
 }
 
-void OzonScraper::start(const QString& urlStr, int minPoints, int maxPoints)
+void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints)
 {
     if (running_)
         return;
@@ -135,7 +135,7 @@ void OzonScraper::start(const QString& urlStr, int minPoints, int maxPoints)
     }
 }
 
-void OzonScraper::start(const QUrl& url, int minPoints, int maxPoints)
+void OzonRadarScraper::start(const QUrl& url, int minPoints, int maxPoints)
 {
     if (!url.isValid()) {
         emit finishedWithError(QStringLiteral("Некорректный URL."));
@@ -144,7 +144,7 @@ void OzonScraper::start(const QUrl& url, int minPoints, int maxPoints)
     start(url.toString(), minPoints, maxPoints);
 }
 
-void OzonScraper::launchCurrentUrlFetch()
+void OzonRadarScraper::launchCurrentUrlFetch()
 {
     stdoutBuffer_.clear();
     url_ = QUrl(allUrls_.at(currentUrlIndex_));
@@ -161,7 +161,7 @@ void OzonScraper::launchCurrentUrlFetch()
     process_->start(pythonExe_, args);
 }
 
-void OzonScraper::stop()
+void OzonRadarScraper::stop()
 {
     running_ = false;
     allUrls_.clear();
@@ -172,12 +172,12 @@ void OzonScraper::stop()
     }
 }
 
-void OzonScraper::onProcessStdout()
+void OzonRadarScraper::onProcessStdout()
 {
     appendStdout(process_->readAllStandardOutput());
 }
 
-void OzonScraper::appendStdout(const QByteArray& chunk)
+void OzonRadarScraper::appendStdout(const QByteArray& chunk)
 {
     if (chunk.isEmpty())
         return;
@@ -191,7 +191,7 @@ void OzonScraper::appendStdout(const QByteArray& chunk)
     }
 }
 
-void OzonScraper::handleJsonLine(const QByteArray& line)
+void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 {
     if (!running_)
         return;
@@ -215,7 +215,7 @@ void OzonScraper::handleJsonLine(const QByteArray& line)
     }
 }
 
-void OzonScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
+void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
     appendStdout(process_->readAllStandardOutput());
 
@@ -255,7 +255,7 @@ void OzonScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
     finishWithSuccess();
 }
 
-void OzonScraper::onExtractResult(const QByteArray& json)
+void OzonRadarScraper::onExtractResult(const QByteArray& json)
 {
     if (json.isEmpty())
         return;
@@ -284,7 +284,7 @@ void OzonScraper::onExtractResult(const QByteArray& json)
     }
 }
 
-QVector<Product> OzonScraper::parseProductsFromJson(const QByteArray& json)
+QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
 {
     QVector<Product> out;
     QJsonParseError err;
@@ -315,7 +315,7 @@ QVector<Product> OzonScraper::parseProductsFromJson(const QByteArray& json)
     return out;
 }
 
-QVector<Product> OzonScraper::computeTop50(const QVector<Product>& all) const
+QVector<Product> OzonRadarScraper::computeTop50(const QVector<Product>& all) const
 {
     QVector<Product> filtered;
     for (const Product& p : all) {
@@ -339,7 +339,7 @@ QVector<Product> OzonScraper::computeTop50(const QVector<Product>& all) const
     return top;
 }
 
-void OzonScraper::finishWithError(const QString& message)
+void OzonRadarScraper::finishWithError(const QString& message)
 {
     running_ = false;
     allUrls_.clear();
@@ -352,7 +352,7 @@ void OzonScraper::finishWithError(const QString& message)
     emit finishedWithError(message);
 }
 
-void OzonScraper::finishWithSuccess()
+void OzonRadarScraper::finishWithSuccess()
 {
     running_ = false;
 
@@ -371,7 +371,7 @@ void OzonScraper::finishWithSuccess()
     emit finishedSuccessfully(total, elapsed, urlSessionCount_);
 }
 
-QString OzonScraper::formatElapsed(qint64 ms) const
+QString OzonRadarScraper::formatElapsed(qint64 ms) const
 {
     const double sec = ms / 1000.0;
     if (sec < 60)

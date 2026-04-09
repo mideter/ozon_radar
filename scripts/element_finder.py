@@ -1,4 +1,4 @@
-"""Модуль для поиска элементов товаров на странице (как в ozon_cpp/ozon_py)."""
+"""Модуль для поиска элементов товаров на странице (как в ozon_radar/ozon_py)."""
 from typing import List
 
 from selenium.webdriver.common.by import By

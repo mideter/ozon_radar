@@ -3,7 +3,7 @@
 #include <QQmlContext>
 
 #include "shortcutlayoutfix.h"
-#include "ozonscraper.h"
+#include "ozonradarscraper.h"
 #include "productmodel.h"
 #include "product.h"
 #include "settingsservice.h"
@@ -13,17 +13,17 @@ int main(int argc, char* argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication app(argc, argv);
-    QCoreApplication::setOrganizationName("ozon_cpp");
-    QCoreApplication::setApplicationName("ozon_cpp");
+    QCoreApplication::setOrganizationName("ozon_radar");
+    QCoreApplication::setApplicationName("ozon_radar");
 
     ShortcutLayoutFixFilter shortcutLayoutFix(&app);
     app.installEventFilter(&shortcutLayoutFix);
 
-    OzonScraper scraper;
+    OzonRadarScraper scraper;
     ProductModel productModel;
     SettingsService settings;
 
-    QObject::connect(&scraper, &OzonScraper::topProductsUpdated,
+    QObject::connect(&scraper, &OzonRadarScraper::topProductsUpdated,
                      [&productModel](const QVector<Product>& products, int totalCount) {
                          productModel.setProducts(products, totalCount);
                      });

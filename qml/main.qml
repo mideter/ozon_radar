@@ -8,7 +8,7 @@ ApplicationWindow {
     width: 850
     height: 1000
     visible: true
-    title: "Парсер товаров Ozon"
+    title: "OzonRadar"
 
     function formatPrice(p) {
         if (typeof p !== "number" || p <= 0) return "—"

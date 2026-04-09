@@ -1,4 +1,4 @@
-"""Модуль для загрузки страниц и ожидания элементов (ozon_cpp/ozon_py + запасной JS-поллинг)."""
+"""Модуль для загрузки страниц и ожидания элементов (ozon_radar/ozon_py + запасной JS-поллинг)."""
 import time
 
 from selenium.common.exceptions import TimeoutException

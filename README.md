@@ -1,4 +1,4 @@
-# Ozon Scraper (Qt)
+# OzonRadar (Qt)
 
 Парсер товаров Ozon: **загрузка страницы** выполняется скриптом Python (`scripts/ozon_fetch.py`) с **undetected-chromedriver** (в stdout — NDJSON с `outerHTML` плиток и URL); **разбор названия, цены и баллов**, фильтрация, топ‑50 и интерфейс — на **C++/Qt Quick** (`ProductCardParser`).
 
@@ -26,7 +26,7 @@ sudo apt install qt5-quick-demos
 
 ```bash
 export OZON_FETCH_SCRIPT=/полный/путь/к/ozon_fetch.py
-./ozon_cpp
+./ozon_radar
 ```
 
 ## Сборка
@@ -42,7 +42,7 @@ make
 Из каталога `build` (чтобы находился `../scripts/ozon_fetch.py`):
 
 ```bash
-./ozon_cpp
+./ozon_radar
 ```
 
 Или задайте `OZON_FETCH_SCRIPT`.
