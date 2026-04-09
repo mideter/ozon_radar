@@ -27,6 +27,8 @@ add_executable(ozon_cpp
     ${SRC_DIR}/productcardparser.cpp
     ${SRC_DIR}/ozonscraper.h
     ${SRC_DIR}/ozonscraper.cpp
+    ${SRC_DIR}/settingsservice.h
+    ${SRC_DIR}/settingsservice.cpp
     qml.qrc
 )
 

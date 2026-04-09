@@ -36,6 +36,16 @@ ApplicationWindow {
     property bool isRunning: false
     property int productsFoundCount: -1
 
+    function openSettingsWindow() {
+        settingsWindowLoader.active = true
+        if (settingsWindowLoader.item) {
+            settingsWindowLoader.item.parserIsRunning = root.isRunning
+            settingsWindowLoader.item.visible = true
+            settingsWindowLoader.item.raise()
+            settingsWindowLoader.item.requestActivate()
+        }
+    }
+
     background: Rectangle {
         color: root.gray100
     }
@@ -100,16 +110,16 @@ ApplicationWindow {
         anchors.margins: 12
         spacing: 12
 
-        // Параметры поиска
+        // Действия
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: paramsColumn.implicitHeight + 24
+            Layout.preferredHeight: actionsColumn.implicitHeight + 24
             color: root.white
             border.color: root.gray200
             radius: 6
 
             ColumnLayout {
-                id: paramsColumn
+                id: actionsColumn
                 anchors.fill: parent
                 anchors.margins: 16
                 anchors.topMargin: 12
@@ -118,66 +128,21 @@ ApplicationWindow {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: 10
                     Text {
-                        text: "Ссылки (по одной в строке)"
-                        Layout.preferredWidth: 260
-                        color: root.gray800
-                    }
-                    ScrollView {
-                        id: urlScrollView
+                        text: "Параметры запуска задаются в отдельном окне настроек."
                         Layout.fillWidth: true
-                        Layout.minimumHeight: 120
-                        Layout.preferredHeight: 180
-                        clip: true
-
-                        TextArea {
-                            id: urlEdit
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            wrapMode: TextArea.Wrap
-                            text: "https://www.ozon.ru/category/aksessuary-i-prinadlezhnosti-dlya-rybalki-11340/?category_was_predicted=true&deny_category_prediction=true&from_global=true&has_points_from_reviews=t&sorting=price&text=коромысло"
-                            color: root.gray800
-                            selectByMouse: true
-                            background: Rectangle {
-                                color: root.gray50
-                                border.color: root.gray200
-                                radius: 4
-                            }
-                        }
+                        color: root.gray800
                     }
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    Text {
-                        text: "Баллы за отзыв"
-                        color: root.gray800
-                    }
-                    TextField {
-                        id: minPointsEdit
-                        Layout.preferredWidth: 70
-                        placeholderText: "мин"
-                        background: Rectangle {
-                            color: root.gray50
-                            border.color: root.gray200
-                            radius: 4
-                        }
-                    }
-                    Text {
-                        text: "—"
-                        color: root.gray500
-                    }
-                    TextField {
-                        id: maxPointsEdit
-                        Layout.preferredWidth: 70
-                        placeholderText: "макс"
-                        background: Rectangle {
-                            color: root.gray50
-                            border.color: root.gray200
-                            radius: 4
-                        }
+                    Button {
+                        id: settingsButton
+                        text: "Настройки..."
+                        onClicked: openSettingsWindow()
                     }
                     Item { Layout.fillWidth: true }
                     Button {
@@ -492,21 +457,18 @@ ApplicationWindow {
     }
 
     function startParsing() {
-        var urlText = urlEdit.text
-        if (urlText.indexOf("\n") < 0 && urlText.indexOf("\r") < 0) {
-            urlText = urlText.trim()
-            if (urlText !== "" && urlText.indexOf("http") !== 0 && urlText.indexOf("https") !== 0)
-                urlText = "https://" + urlText
+        var urlText = settings.urlsText
+        var minPoints = settings.minPoints
+        var maxPoints = settings.maxPoints
+        var validationError = settings.validate(urlText, settings.minPointsText(), settings.maxPointsText())
+        if (validationError !== "") {
+            statusColor = "#DC2626"
+            statusText1 = "Ошибка в настройках"
+            statusText2 = ""
+            errorMessage = validationError
+            errorDialog.open()
+            return
         }
-
-        var minPoints = -1
-        var maxPoints = -1
-        var v = parseInt(minPointsEdit.text)
-        if (!isNaN(v))
-            minPoints = v
-        v = parseInt(maxPointsEdit.text)
-        if (!isNaN(v))
-            maxPoints = v
 
         productModel.clear()
         productsFoundCount = -1
@@ -518,5 +480,22 @@ ApplicationWindow {
         statusColor = "#0EA5E9"
 
         scraper.start(urlText, minPoints, maxPoints)
+    }
+
+    Loader {
+        id: settingsWindowLoader
+        active: false
+        source: "qrc:/qml/SettingsWindow.qml"
+        onLoaded: {
+            item.parserIsRunning = root.isRunning
+            item.visible = true
+            item.raise()
+            item.requestActivate()
+        }
+    }
+
+    onIsRunningChanged: {
+        if (settingsWindowLoader.item)
+            settingsWindowLoader.item.parserIsRunning = root.isRunning
     }
 }
