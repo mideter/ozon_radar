@@ -163,15 +163,6 @@ ApplicationWindow {
             Layout.fillWidth: true
             spacing: 8
 
-            Button {
-                id: resetButton
-                text: "Сбросить"
-                onClicked: {
-                    settings.resetDefaults()
-                    syncFromSettings()
-                }
-            }
-
             Item { Layout.fillWidth: true }
 
             Button {

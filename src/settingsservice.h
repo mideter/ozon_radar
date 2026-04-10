@@ -27,7 +27,6 @@ public:
     Q_INVOKABLE bool applyAndSave(const QString& urlsText,
                                   const QString& minPointsText,
                                   const QString& maxPointsText);
-    Q_INVOKABLE void resetDefaults();
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
 

@@ -84,14 +84,6 @@ bool SettingsService::applyAndSave(const QString& urlsText,
     return true;
 }
 
-void SettingsService::resetDefaults()
-{
-    setUrlsText(kDefaultUrl);
-    setMinPoints(NoPointsLimit);
-    setMaxPoints(NoPointsLimit);
-    save();
-}
-
 void SettingsService::load()
 {
     const QString loadedUrls = settings_.value(kUrlsTextKey, kDefaultUrl).toString();
