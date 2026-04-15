@@ -10,49 +10,63 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+
 namespace {
+
 
 QString normalizeUrl(const QString& href)
 {
     if (href.isEmpty())
         return {};
-    QString u = href.split(QLatin1Char('?')).first().split(QLatin1Char('#')).first();
-    while (u.endsWith(QLatin1Char('/')))
+    QString u = href.split('?').first().split('#').first();
+    while (u.endsWith('/'))
         u.chop(1);
     return u;
 }
 
+
 bool isValidProductUrl(const QString& url)
 {
-    if (url.isEmpty() || !url.contains(QLatin1String("/product/")))
+    if (url.isEmpty() || !url.contains("/product/"))
         return false;
-    if (url.contains(QLatin1String("/reviews")) || url.contains(QLatin1String("/questions"))
-        || url.contains(QLatin1String("/seller")))
+
+    if (url.contains("/reviews") || url.contains("/questions")
+        || url.contains("/seller"))
         return false;
-    const int idx = url.indexOf(QLatin1String("/product/")) + 9;
-    const QString id = url.mid(idx).split(QLatin1Char('/')).first();
+
+    const int idx = url.indexOf("/product/") + 9;
+    const QString id = url.mid(idx).split('/').first();
+
     return id.length() >= 3;
 }
+
 
 QStringList parseUrlsFromMultiline(const QString& text)
 {
     QStringList out;
     const QStringList rawLines = text.split(QChar('\n'));
+
     for (QString line : rawLines) {
         line = line.trimmed();
+
         if (line.isEmpty())
             continue;
-        if (!line.startsWith(QLatin1String("http://"), Qt::CaseInsensitive)
-            && !line.startsWith(QLatin1String("https://"), Qt::CaseInsensitive))
+
+        if (!line.startsWith("http://", Qt::CaseInsensitive)
+            && !line.startsWith("https://", Qt::CaseInsensitive))
             line = QStringLiteral("https://") + line;
+
         const QUrl u = QUrl::fromUserInput(line);
+
         if (u.isValid() && !u.scheme().isEmpty())
             out.append(u.toString());
     }
     return out;
 }
 
+
 } // namespace
+
 
 OzonRadarScraper::OzonRadarScraper(QObject* parent)
     : QObject(parent)
@@ -63,26 +77,34 @@ OzonRadarScraper::OzonRadarScraper(QObject* parent)
             this, &OzonRadarScraper::onProcessFinished);
 }
 
+
 OzonRadarScraper::~OzonRadarScraper()
 {
     stop();
 }
 
+
 QString OzonRadarScraper::resolveFetchScriptPath() const
 {
     const QByteArray env = qgetenv("OZON_FETCH_SCRIPT");
+
     if (!env.isEmpty())
         return QString::fromLocal8Bit(env);
 
     const QString appDir = QCoreApplication::applicationDirPath();
     QString p = QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py"));
+
     if (QFileInfo::exists(p))
         return QDir::cleanPath(p);
+    
     p = QDir::currentPath() + QStringLiteral("/scripts/ozon_fetch.py");
+    
     if (QFileInfo::exists(p))
         return p;
+    
     return QDir::cleanPath(QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py")));
 }
+
 
 void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints)
 {
@@ -134,6 +156,7 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     }
 }
 
+
 void OzonRadarScraper::start(const QUrl& url, int minPoints, int maxPoints)
 {
     if (!url.isValid()) {
@@ -142,6 +165,7 @@ void OzonRadarScraper::start(const QUrl& url, int minPoints, int maxPoints)
     }
     start(url.toString(), minPoints, maxPoints);
 }
+
 
 void OzonRadarScraper::launchCurrentUrlFetch()
 {
@@ -159,6 +183,7 @@ void OzonRadarScraper::launchCurrentUrlFetch()
     process_->start(pythonExe_, args);
 }
 
+
 void OzonRadarScraper::stop()
 {
     running_ = false;
@@ -169,10 +194,12 @@ void OzonRadarScraper::stop()
     }
 }
 
+
 void OzonRadarScraper::onProcessStdout()
 {
     appendStdout(process_->readAllStandardOutput());
 }
+
 
 void OzonRadarScraper::appendStdout(const QByteArray& chunk)
 {
@@ -188,6 +215,7 @@ void OzonRadarScraper::appendStdout(const QByteArray& chunk)
     }
 }
 
+
 void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 {
     if (!running_)
@@ -200,23 +228,25 @@ void OzonRadarScraper::handleJsonLine(const QByteArray& line)
     }
 
     const QJsonObject o = doc.object();
-    const QString type = o.value(QLatin1String("type")).toString();
-    if (type == QLatin1String("batch")) {
-        const QJsonArray items = o.value(QLatin1String("items")).toArray();
+    const QString type = o.value("type").toString();
+
+    if (type == QStringLiteral("batch")) {
+        const QJsonArray items = o.value(QStringLiteral("items")).toArray();
         const QJsonDocument arrDoc(items);
         onExtractResult(arrDoc.toJson(QJsonDocument::Compact));
-    } else if (type == QLatin1String("progress")) {
-        const int processed = o.value(QLatin1String("processed_urls")).toInt();
-        const int total = o.value(QLatin1String("total_urls")).toInt();
+    } else if (type == QStringLiteral("progress")) {
+        const int processed = o.value(QStringLiteral("processed_urls")).toInt();
+        const int total = o.value(QStringLiteral("total_urls")).toInt();
         if (total > 1) {
             emit statusChanged(QStringLiteral("%1/%2").arg(processed).arg(total), -1, 0);
         }
-    } else if (type == QLatin1String("error")) {
-        finishWithError(o.value(QLatin1String("message")).toString());
-    } else if (type == QLatin1String("done")) {
+    } else if (type == QStringLiteral("error")) {
+        finishWithError(o.value(QStringLiteral("message")).toString());
+    } else if (type == QStringLiteral("done")) {
         // Завершение — итог в onProcessFinished
     }
 }
+
 
 void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
@@ -236,6 +266,7 @@ void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus stat
     allUrls_.clear();
     finishWithSuccess();
 }
+
 
 void OzonRadarScraper::onExtractResult(const QByteArray& json)
 {
@@ -266,6 +297,7 @@ void OzonRadarScraper::onExtractResult(const QByteArray& json)
     }
 }
 
+
 QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
 {
     QVector<Product> out;
@@ -279,27 +311,37 @@ QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
     int index = allProducts_.size() + 1;
     for (const QJsonValue& v : arr) {
         const QJsonObject o = v.toObject();
-        const QString url = normalizeUrl(o.value(QLatin1String("url")).toString());
+        const QString url = normalizeUrl(o.value("url").toString());
+
         if (!isValidProductUrl(url))
             continue;
-        const QString html = o.value(QLatin1String("html")).toString();
+
+        const QString html = o.value("html").toString();
         const std::optional<ParsedTile> parsed = parseOzonTileHtml(html, url);
+
         if (!parsed.has_value())
             continue;
+
         const QString name = parsed->name.trimmed();
+
         if (name.length() < 3)
             continue;
+        
         QString shortName = name;
+
         if (shortName.length() > 80)
             shortName = shortName.left(77) + QStringLiteral("...");
+
         out.append(Product(index++, shortName, parsed->price, parsed->reviewPoints, url));
     }
     return out;
 }
 
+
 QVector<Product> OzonRadarScraper::computeTop50(const QVector<Product>& all) const
 {
     QVector<Product> filtered;
+
     for (const Product& p : all) {
         const int pts = p.reviewPoints();
         if (minPoints_ >= 0 && pts < minPoints_)
@@ -308,30 +350,38 @@ QVector<Product> OzonRadarScraper::computeTop50(const QVector<Product>& all) con
             continue;
         filtered.append(p);
     }
+
     std::sort(filtered.begin(), filtered.end(), [](const Product& a, const Product& b) {
         return a.pointsToPriceRatio() > b.pointsToPriceRatio();
     });
+
     const int n = qMin(50, filtered.size());
     QVector<Product> top;
     top.reserve(n);
+
     for (int i = 0; i < n; ++i) {
         const Product& orig = filtered[i];
         top.append(Product(i + 1, orig.name(), orig.price(), orig.reviewPoints(), orig.url()));
     }
+
     return top;
 }
+
 
 void OzonRadarScraper::finishWithError(const QString& message)
 {
     running_ = false;
     allUrls_.clear();
+
     if (process_->state() != QProcess::NotRunning) {
         process_->kill();
         process_->waitForFinished(2000);
     }
+
     stdoutBuffer_.clear();
     emit finishedWithError(message);
 }
+
 
 void OzonRadarScraper::finishWithSuccess()
 {
@@ -347,14 +397,19 @@ void OzonRadarScraper::finishWithSuccess()
     emit finishedSuccessfully(total, elapsed, urlSessionCount_);
 }
 
+
 QString OzonRadarScraper::formatElapsed(qint64 ms) const
 {
     const double sec = ms / 1000.0;
+
     if (sec < 60)
         return QStringLiteral("Затрачено %1 сек").arg(sec, 0, 'f', 1);
+    
     const int m = static_cast<int>(sec / 60);
     const double s = sec - m * 60;
+    
     if (s < 0.1)
         return QStringLiteral("Затрачено %1 мин").arg(m);
+    
     return QStringLiteral("Затрачено %1 мин %2 сек").arg(m).arg(s, 0, 'f', 1);
 }
