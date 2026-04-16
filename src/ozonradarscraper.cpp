@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <iostream>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -12,33 +13,6 @@
 
 
 namespace {
-
-
-QString normalizeUrl(const QString& href)
-{
-    if (href.isEmpty())
-        return {};
-    QString u = href.split('?').first().split('#').first();
-    while (u.endsWith('/'))
-        u.chop(1);
-    return u;
-}
-
-
-bool isValidProductUrl(const QString& url)
-{
-    if (url.isEmpty() || !url.contains("/product/"))
-        return false;
-
-    if (url.contains("/reviews") || url.contains("/questions")
-        || url.contains("/seller"))
-        return false;
-
-    const int idx = url.indexOf("/product/") + 9;
-    const QString id = url.mid(idx).split('/').first();
-
-    return id.length() >= 3;
-}
 
 
 QStringList parseUrlsFromMultiline(const QString& text)
@@ -61,6 +35,7 @@ QStringList parseUrlsFromMultiline(const QString& text)
         if (u.isValid() && !u.scheme().isEmpty())
             out.append(u.toString());
     }
+    
     return out;
 }
 
@@ -311,11 +286,8 @@ QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
     int index = allProducts_.size() + 1;
     for (const QJsonValue& v : arr) {
         const QJsonObject o = v.toObject();
-        const QString url = normalizeUrl(o.value("url").toString());
-
-        if (!isValidProductUrl(url))
-            continue;
-
+        
+        const QString url = o.value("url").toString();
         const QString html = o.value("html").toString();
         const std::optional<ParsedTile> parsed = parseOzonTileHtml(html, url);
 
