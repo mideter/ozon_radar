@@ -35,7 +35,7 @@ QStringList parseUrlsFromMultiline(const QString& text)
         if (u.isValid() && !u.scheme().isEmpty())
             out.append(u.toString());
     }
-    
+
     return out;
 }
 
@@ -278,12 +278,13 @@ QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
     QVector<Product> out;
     QJsonParseError err;
     const QJsonDocument doc = QJsonDocument::fromJson(json, &err);
-    if (err.error != QJsonParseError::NoError || !doc.isArray()) {
+
+    if (err.error != QJsonParseError::NoError || !doc.isArray())
         return out;
-    }
 
     const QJsonArray arr = doc.array();
     int index = allProducts_.size() + 1;
+
     for (const QJsonValue& v : arr) {
         const QJsonObject o = v.toObject();
         
@@ -294,18 +295,17 @@ QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
         if (!parsed.has_value())
             continue;
 
-        const QString name = parsed->name.trimmed();
-
-        if (name.length() < 3)
+        if (parsed->reviewPoints <= 0)
             continue;
         
-        QString shortName = name;
+        QString shortName = parsed->name.trimmed();
 
         if (shortName.length() > 80)
             shortName = shortName.left(77) + QStringLiteral("...");
 
         out.append(Product(index++, shortName, parsed->price, parsed->reviewPoints, url));
     }
+    
     return out;
 }
 
