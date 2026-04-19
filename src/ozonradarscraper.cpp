@@ -67,17 +67,17 @@ QString OzonRadarScraper::resolveFetchScriptPath() const
         return QString::fromLocal8Bit(env);
 
     const QString appDir = QCoreApplication::applicationDirPath();
-    QString p = QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py"));
+    QString p = QDir(appDir).filePath("../scripts/ozon_fetch.py");
 
     if (QFileInfo::exists(p))
         return QDir::cleanPath(p);
     
-    p = QDir::currentPath() + QStringLiteral("/scripts/ozon_fetch.py");
+    p = QDir::currentPath() + "/scripts/ozon_fetch.py";
     
     if (QFileInfo::exists(p))
         return p;
     
-    return QDir::cleanPath(QDir(appDir).filePath(QStringLiteral("../scripts/ozon_fetch.py")));
+    return QDir::cleanPath(QDir(appDir).filePath("../scripts/ozon_fetch.py"));
 }
 
 
@@ -87,16 +87,17 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
         return;
 
     fetchScriptPath_ = resolveFetchScriptPath();
+
     if (!QFileInfo::exists(fetchScriptPath_)) {
         emit finishedWithError(
-            QStringLiteral("Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите "
-                           "scripts/ozon_fetch.py рядом с приложением."));
+            "Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите "
+            "scripts/ozon_fetch.py рядом с приложением.");
         return;
     }
 
     const QStringList urls = parseUrlsFromMultiline(urlStr);
     if (urls.isEmpty()) {
-        emit finishedWithError(QStringLiteral("Некорректные URL. Укажите по одной ссылке в строке."));
+        emit finishedWithError("Некорректные URL. Укажите по одной ссылке в строке.");
         return;
     }
 
@@ -127,8 +128,8 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
         running_ = false;
         allUrls_.clear();
         emit finishedWithError(
-            QStringLiteral("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
-                           "(см. README).")
+            QString("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
+                    "(см. README).")
                 .arg(pythonExe_));
     }
 }
@@ -141,9 +142,9 @@ void OzonRadarScraper::launchCurrentUrlFetch()
     const int total = allUrls_.size();
     
     if (total > 1)
-        emit statusChanged(QStringLiteral("0/%1").arg(total), -1, 0);
+        emit statusChanged(QString("0/%1").arg(total), -1, 0);
     else
-        emit statusChanged(QStringLiteral("Загрузка страницы..."), -1, 0);
+        emit statusChanged("Загрузка страницы...", -1, 0);
 
     QStringList args;
     args << fetchScriptPath_ << allUrls_;
