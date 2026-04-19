@@ -115,8 +115,10 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     pythonExe_ = qEnvironmentVariable("OZON_PYTHON", QStringLiteral("python3"));
 
     launchCurrentUrlFetch();
+    
     if (!running_)
         return;
+
     if (!process_->waitForStarted(5000)) {
         if (process_->state() != QProcess::NotRunning) {
             process_->kill();
@@ -134,11 +136,10 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
 
 void OzonRadarScraper::start(const QUrl& url, int minPoints, int maxPoints)
 {
-    if (!url.isValid()) {
+    if (url.isValid())
+        start(url.toString(), minPoints, maxPoints);
+    else
         emit finishedWithError(QStringLiteral("Некорректный URL."));
-        return;
-    }
-    start(url.toString(), minPoints, maxPoints);
 }
 
 
@@ -147,11 +148,11 @@ void OzonRadarScraper::launchCurrentUrlFetch()
     stdoutBuffer_.clear();
     url_ = QUrl(allUrls_.constFirst());
     const int total = allUrls_.size();
-    if (total > 1) {
+    
+    if (total > 1)
         emit statusChanged(QStringLiteral("0/%1").arg(total), -1, 0);
-    } else {
+    else
         emit statusChanged(QStringLiteral("Загрузка страницы..."), -1, 0);
-    }
 
     QStringList args;
     args << fetchScriptPath_ << allUrls_;
@@ -163,6 +164,7 @@ void OzonRadarScraper::stop()
 {
     running_ = false;
     allUrls_.clear();
+
     if (process_->state() != QProcess::NotRunning) {
         process_->kill();
         process_->waitForFinished(3000);
@@ -180,8 +182,10 @@ void OzonRadarScraper::appendStdout(const QByteArray& chunk)
 {
     if (chunk.isEmpty())
         return;
+    
     stdoutBuffer_.append(chunk);
     int pos = 0;
+    
     while ((pos = stdoutBuffer_.indexOf('\n')) >= 0) {
         QByteArray line = stdoutBuffer_.left(pos).trimmed();
         stdoutBuffer_.remove(0, pos + 1);
@@ -198,26 +202,26 @@ void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 
     QJsonParseError err;
     const QJsonDocument doc = QJsonDocument::fromJson(line, &err);
-    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+    
+    if (err.error != QJsonParseError::NoError || !doc.isObject())
         return;
-    }
 
     const QJsonObject o = doc.object();
     const QString type = o.value("type").toString();
 
-    if (type == QStringLiteral("batch")) {
-        const QJsonArray items = o.value(QStringLiteral("items")).toArray();
+    if (type == "batch") {
+        const QJsonArray items = o.value("items").toArray();
         const QJsonDocument arrDoc(items);
         onExtractResult(arrDoc.toJson(QJsonDocument::Compact));
-    } else if (type == QStringLiteral("progress")) {
-        const int processed = o.value(QStringLiteral("processed_urls")).toInt();
-        const int total = o.value(QStringLiteral("total_urls")).toInt();
-        if (total > 1) {
+    } else if (type == "progress") {
+        const int processed = o.value("processed_urls").toInt();
+        const int total = o.value("total_urls").toInt();
+        
+        if (total > 1)
             emit statusChanged(QStringLiteral("%1/%2").arg(processed).arg(total), -1, 0);
-        }
-    } else if (type == QStringLiteral("error")) {
-        finishWithError(o.value(QStringLiteral("message")).toString());
-    } else if (type == QStringLiteral("done")) {
+    } else if (type == "error") {
+        finishWithError(o.value("message").toString());
+    } else if (type == "done") {
         // Завершение — итог в onProcessFinished
     }
 }
