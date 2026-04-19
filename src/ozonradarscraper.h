@@ -19,7 +19,6 @@ public:
     explicit OzonRadarScraper();
     ~OzonRadarScraper() override;
 
-    void start(const QUrl& url, int minPoints, int maxPoints);
     Q_INVOKABLE void start(const QString& urlStr, int minPoints, int maxPoints);
     void stop();
 

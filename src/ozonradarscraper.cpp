@@ -134,15 +134,6 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
 }
 
 
-void OzonRadarScraper::start(const QUrl& url, int minPoints, int maxPoints)
-{
-    if (url.isValid())
-        start(url.toString(), minPoints, maxPoints);
-    else
-        emit finishedWithError(QStringLiteral("Некорректный URL."));
-}
-
-
 void OzonRadarScraper::launchCurrentUrlFetch()
 {
     stdoutBuffer_.clear();
