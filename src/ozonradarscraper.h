@@ -47,7 +47,6 @@ private:
     QProcess* process_ = nullptr;
     QByteArray stdoutBuffer_;
     QElapsedTimer elapsedTimer_;
-    bool running_ = false;
 
     QStringList allUrls_;
     QString fetchScriptPath_;

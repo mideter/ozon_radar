@@ -83,9 +83,6 @@ QString OzonRadarScraper::resolveFetchScriptPath() const
 
 void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints)
 {
-    if (running_)
-        return;
-
     fetchScriptPath_ = resolveFetchScriptPath();
 
     if (!QFileInfo::exists(fetchScriptPath_)) {
@@ -110,7 +107,6 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     lastTableCount_ = 0;
     lastPrice_ = 0;
     stdoutBuffer_.clear();
-    running_ = true;
     elapsedTimer_.start();
 
     pythonExe_ = qEnvironmentVariable("OZON_PYTHON", "python3");
@@ -122,7 +118,6 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
             process_->kill();
             process_->waitForFinished(2000);
         }
-        running_ = false;
         allUrls_.clear();
         emit finishedWithError(
             QString("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
@@ -150,9 +145,6 @@ void OzonRadarScraper::launchCurrentUrlFetch()
 
 void OzonRadarScraper::stop()
 {
-    running_ = false;
-    allUrls_.clear();
-
     if (process_->state() != QProcess::NotRunning) {
         process_->kill();
         process_->waitForFinished(3000);
@@ -183,9 +175,6 @@ void OzonRadarScraper::appendStdout(const QByteArray& chunk)
 
 void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 {
-    if (!running_)
-        return;
-
     QJsonParseError err;
     const QJsonDocument doc = QJsonDocument::fromJson(line, &err);
     
@@ -216,9 +205,6 @@ void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
     appendStdout(process_->readAllStandardOutput());
-
-    if (!running_)
-        return;
 
     if (status != QProcess::NormalExit || exitCode != 0) {
         QString err = QString::fromUtf8(process_->readAllStandardError()).trimmed();
@@ -331,9 +317,6 @@ QVector<Product> OzonRadarScraper::computeTop50(const QVector<Product>& all) con
 
 void OzonRadarScraper::finishWithError(const QString& message)
 {
-    running_ = false;
-    allUrls_.clear();
-
     if (process_->state() != QProcess::NotRunning) {
         process_->kill();
         process_->waitForFinished(2000);
@@ -346,8 +329,6 @@ void OzonRadarScraper::finishWithError(const QString& message)
 
 void OzonRadarScraper::finishWithSuccess()
 {
-    running_ = false;
-
     const QVector<Product> top = computeTop50(allProducts_);
     const int total = allProducts_.size();
     const QString elapsed = formatElapsed(elapsedTimer_.elapsed());
