@@ -1,4 +1,5 @@
 #include "ozonradarscraper.h"
+#include "fetcheventparser.h"
 #include "productcardparser.h"
 #include "scraperresultutils.h"
 
@@ -174,29 +175,24 @@ void OzonRadarScraper::appendStdout(const QByteArray& chunk)
 
 void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 {
-    QJsonParseError err;
-    const QJsonDocument doc = QJsonDocument::fromJson(line, &err);
-    
-    if (err.error != QJsonParseError::NoError || !doc.isObject())
-        return;
+    const FetchEvent event = FetchEventParser::parseLine(line);
 
-    const QJsonObject o = doc.object();
-    const QString type = o.value("type").toString();
-
-    if (type == "batch") {
-        const QJsonArray items = o.value("items").toArray();
-        const QJsonDocument arrDoc(items);
-        onExtractResult(arrDoc.toJson(QJsonDocument::Compact));
-    } else if (type == "progress") {
-        const int processed = o.value("processed_urls").toInt();
-        const int total = o.value("total_urls").toInt();
-        
-        if (total > 1)
-            emit statusChanged(QStringLiteral("%1/%2").arg(processed).arg(total), -1, 0);
-    } else if (type == "error") {
-        finishWithError(o.value("message").toString());
-    } else if (type == "done") {
+    switch (event.type) {
+    case FetchEvent::Type::Batch:
+        onExtractResult(event.batchJson);
+        break;
+    case FetchEvent::Type::Progress:
+        if (event.totalUrls > 1)
+            emit statusChanged(QStringLiteral("%1/%2").arg(event.processedUrls).arg(event.totalUrls), -1, 0);
+        break;
+    case FetchEvent::Type::Error:
+        finishWithError(event.errorMessage);
+        break;
+    case FetchEvent::Type::Done:
         // Завершение — итог в onProcessFinished
+        break;
+    case FetchEvent::Type::Invalid:
+        break;
     }
 }
 
