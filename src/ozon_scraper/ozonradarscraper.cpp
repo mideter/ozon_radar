@@ -6,6 +6,7 @@
 
 #include <exception>
 
+
 OzonRadarScraper::OzonRadarScraper()
     : processRunner_(new PythonFetchProcessRunner(this))
 {
@@ -27,9 +28,11 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     fetchScriptPath_ = FetchScriptPathResolver::resolve();
     stopRequested_ = false;
 
-    const QStringList urls = UrlInputParser::parseMultiline(urlStr);
-    if (urls.isEmpty()) {
-        emit finishedWithError("Некорректные URL. Укажите по одной ссылке в строке.");
+    QStringList urls;
+    try {
+        urls = UrlInputParser::parseMultiline(urlStr);
+    } catch (const std::exception& ex) {
+        emit finishedWithError(QString::fromUtf8(ex.what()));
         return;
     }
 

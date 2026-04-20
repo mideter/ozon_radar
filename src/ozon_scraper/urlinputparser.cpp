@@ -1,6 +1,7 @@
 #include "ozon_scraper/urlinputparser.h"
 
 #include <QUrl>
+#include <stdexcept>
 
 
 QStringList UrlInputParser::parseMultiline(const QString& text)
@@ -23,6 +24,9 @@ QStringList UrlInputParser::parseMultiline(const QString& text)
         if (url.isValid() && !url.scheme().isEmpty())
             out.append(url.toString());
     }
+
+    if (out.isEmpty())
+        throw std::runtime_error("Некорректные URL. Укажите по одной ссылке в строке.");
 
     return out;
 }
