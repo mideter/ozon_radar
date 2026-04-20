@@ -1,5 +1,4 @@
 #include "ozon_scraper/batchproductmapper.h"
-#include "ozon_scraper/fetchscriptpathresolver.h"
 #include "ozon_scraper/ozonradarscraper.h"
 #include "ozon_scraper/scraperresultutils.h"
 #include "ozon_scraper/urlinputparser.h"
@@ -25,7 +24,6 @@ OzonRadarScraper::~OzonRadarScraper()
 
 void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints)
 {
-    fetchScriptPath_ = FetchScriptPathResolver::resolve();
     stopRequested_ = false;
 
     QStringList urls;
@@ -45,8 +43,6 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     fetchEventParser_.reset();
     elapsedTimer_.start();
 
-    pythonExe_ = qEnvironmentVariable("OZON_PYTHON", "python3");
-
     launchCurrentUrlFetch();
 }
 
@@ -62,7 +58,7 @@ void OzonRadarScraper::launchCurrentUrlFetch()
         emit statusChanged("Загрузка страницы...", -1, 0);
 
     try {
-        processRunner_->startFetch(pythonExe_, fetchScriptPath_, allUrls_);
+        processRunner_->startFetch(allUrls_);
     } catch (const std::exception& ex) {
         allUrls_.clear();
         emit finishedWithError(QString::fromUtf8(ex.what()));

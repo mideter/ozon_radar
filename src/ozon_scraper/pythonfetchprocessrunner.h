@@ -5,6 +5,7 @@
 #include <QString>
 #include <QStringList>
 
+
 class PythonFetchProcessRunner : public QObject
 {
     Q_OBJECT
@@ -12,9 +13,8 @@ class PythonFetchProcessRunner : public QObject
 public:
     explicit PythonFetchProcessRunner(QObject* parent = nullptr);
 
-    void startFetch(const QString& pythonExe,
-                    const QString& scriptPath,
-                    const QStringList& urls);
+    void startFetch(const QStringList& urls);
+
     void stop(int waitMs = 3000);
     bool isRunning() const;
 

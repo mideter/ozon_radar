@@ -10,6 +10,7 @@
 #include <QStringList>
 #include <QVector>
 
+
 class OzonRadarScraper : public QObject
 {
     Q_OBJECT
@@ -43,8 +44,6 @@ private:
     QElapsedTimer elapsedTimer_;
 
     QStringList allUrls_;
-    QString fetchScriptPath_;
-    QString pythonExe_;
     int minPoints_ = -1;
     int maxPoints_ = -1;
     ProductAccumulator productAccumulator_;

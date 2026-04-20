@@ -1,4 +1,5 @@
 #include "ozon_scraper/pythonfetchprocessrunner.h"
+#include "ozon_scraper/fetchscriptpathresolver.h"
 
 #include <QFileInfo>
 #include <stdexcept>
@@ -14,10 +15,11 @@ PythonFetchProcessRunner::PythonFetchProcessRunner(QObject* parent)
 }
 
 
-void PythonFetchProcessRunner::startFetch(const QString& pythonExe,
-                                          const QString& scriptPath,
-                                          const QStringList& urls)
+void PythonFetchProcessRunner::startFetch(const QStringList& urls)
 {
+    const QString scriptPath = FetchScriptPathResolver::resolve();
+    const QString pythonExe = qEnvironmentVariable("OZON_PYTHON", "python3");
+
     if (!QFileInfo::exists(scriptPath))
         throw std::runtime_error(
             "Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите scripts/ozon_fetch.py рядом с приложением.");
