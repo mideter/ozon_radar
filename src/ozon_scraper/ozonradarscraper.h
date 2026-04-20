@@ -39,7 +39,6 @@ private:
     void onExtractResult(const QByteArray& jsonArrayUtf8);
     void finishWithError(const QString& message);
     void finishWithSuccess();
-    QVector<Product> parseProductsFromJson(const QByteArray& json);
 
     QProcess* process_ = nullptr;
     QByteArray stdoutBuffer_;

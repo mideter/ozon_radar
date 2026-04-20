@@ -23,6 +23,8 @@ add_executable(ozon_radar
     ${SRC_DIR}/product.cpp
     ${SRC_DIR}/productmodel.h
     ${SRC_DIR}/productmodel.cpp
+    ${SRC_DIR}/ozon_scraper/batchproductmapper.h
+    ${SRC_DIR}/ozon_scraper/batchproductmapper.cpp
     ${SRC_DIR}/ozon_scraper/productcardparser.h
     ${SRC_DIR}/ozon_scraper/productcardparser.cpp
     ${SRC_DIR}/ozon_scraper/fetcheventparser.h

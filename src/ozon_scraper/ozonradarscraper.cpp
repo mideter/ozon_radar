@@ -1,17 +1,15 @@
+#include "ozon_scraper/batchproductmapper.h"
 #include "ozon_scraper/ozonradarscraper.h"
 #include "ozon_scraper/fetcheventparser.h"
-#include "ozon_scraper/productcardparser.h"
 #include "ozon_scraper/scraperresultutils.h"
 
-#include <optional>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
+
 
 namespace {
+
 
 QStringList parseUrlsFromMultiline(const QString& text)
 {
@@ -38,7 +36,9 @@ QStringList parseUrlsFromMultiline(const QString& text)
     return out;
 }
 
+
 } // namespace
+
 
 OzonRadarScraper::OzonRadarScraper()
     : process_(new QProcess(this))
@@ -48,10 +48,12 @@ OzonRadarScraper::OzonRadarScraper()
             this, &OzonRadarScraper::onProcessFinished);
 }
 
+
 OzonRadarScraper::~OzonRadarScraper()
 {
     stop();
 }
+
 
 QString OzonRadarScraper::resolveFetchScriptPath() const
 {
@@ -73,6 +75,7 @@ QString OzonRadarScraper::resolveFetchScriptPath() const
 
     return QDir::cleanPath(QDir(appDir).filePath("../scripts/ozon_fetch.py"));
 }
+
 
 void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints)
 {
@@ -119,6 +122,7 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     }
 }
 
+
 void OzonRadarScraper::launchCurrentUrlFetch()
 {
     stdoutBuffer_.clear();
@@ -134,6 +138,7 @@ void OzonRadarScraper::launchCurrentUrlFetch()
     process_->start(pythonExe_, args);
 }
 
+
 void OzonRadarScraper::stop()
 {
     if (process_->state() != QProcess::NotRunning) {
@@ -142,10 +147,12 @@ void OzonRadarScraper::stop()
     }
 }
 
+
 void OzonRadarScraper::onProcessStdout()
 {
     appendStdout(process_->readAllStandardOutput());
 }
+
 
 void OzonRadarScraper::appendStdout(const QByteArray& chunk)
 {
@@ -160,6 +167,7 @@ void OzonRadarScraper::appendStdout(const QByteArray& chunk)
             handleJsonLine(line);
     }
 }
+
 
 void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 {
@@ -184,6 +192,7 @@ void OzonRadarScraper::handleJsonLine(const QByteArray& line)
     }
 }
 
+
 void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
     appendStdout(process_->readAllStandardOutput());
@@ -200,9 +209,10 @@ void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus stat
     finishWithSuccess();
 }
 
+
 void OzonRadarScraper::onExtractResult(const QByteArray& json)
 {
-    const QVector<Product> batch = parseProductsFromJson(json);
+    const QVector<Product> batch = BatchProductMapper::mapBatchJson(json, allProducts_.size() + 1);
     int added = 0;
 
     for (const Product& p : batch) {
@@ -229,41 +239,6 @@ void OzonRadarScraper::onExtractResult(const QByteArray& json)
     }
 }
 
-QVector<Product> OzonRadarScraper::parseProductsFromJson(const QByteArray& json)
-{
-    QVector<Product> out;
-    QJsonParseError err;
-    const QJsonDocument doc = QJsonDocument::fromJson(json, &err);
-
-    if (err.error != QJsonParseError::NoError || !doc.isArray())
-        return out;
-
-    const QJsonArray arr = doc.array();
-    int index = allProducts_.size() + 1;
-
-    for (const QJsonValue& v : arr) {
-        const QJsonObject o = v.toObject();
-
-        const QString url = o.value("url").toString();
-        const QString html = o.value("html").toString();
-        const std::optional<ParsedTile> parsed = ParsedTile::parseHtml(html);
-
-        if (!parsed.has_value())
-            continue;
-
-        if (parsed->reviewPoints <= 0)
-            continue;
-
-        QString shortName = parsed->name.trimmed();
-
-        if (shortName.length() > 80)
-            shortName = shortName.left(77) + QStringLiteral("...");
-
-        out.append(Product(index++, shortName, parsed->price, parsed->reviewPoints, url));
-    }
-
-    return out;
-}
 
 void OzonRadarScraper::finishWithError(const QString& message)
 {
@@ -275,6 +250,7 @@ void OzonRadarScraper::finishWithError(const QString& message)
     stdoutBuffer_.clear();
     emit finishedWithError(message);
 }
+
 
 void OzonRadarScraper::finishWithSuccess()
 {
