@@ -23,6 +23,8 @@ add_executable(ozon_radar
     ${SRC_DIR}/product.cpp
     ${SRC_DIR}/productmodel.h
     ${SRC_DIR}/productmodel.cpp
+    ${SRC_DIR}/ozon_scraper/urlinputparser.h
+    ${SRC_DIR}/ozon_scraper/urlinputparser.cpp
     ${SRC_DIR}/ozon_scraper/pythonfetchprocessrunner.h
     ${SRC_DIR}/ozon_scraper/pythonfetchprocessrunner.cpp
     ${SRC_DIR}/ozon_scraper/productaccumulator.h

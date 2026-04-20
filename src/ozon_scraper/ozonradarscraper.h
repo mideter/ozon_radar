@@ -8,7 +8,6 @@
 #include <QElapsedTimer>
 #include <QObject>
 #include <QStringList>
-#include <QUrl>
 #include <QVector>
 
 class OzonRadarScraper : public QObject

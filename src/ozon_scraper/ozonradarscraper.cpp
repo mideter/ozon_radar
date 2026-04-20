@@ -1,41 +1,10 @@
 #include "ozon_scraper/batchproductmapper.h"
 #include "ozon_scraper/ozonradarscraper.h"
 #include "ozon_scraper/scraperresultutils.h"
+#include "ozon_scraper/urlinputparser.h"
 
 #include <QCoreApplication>
 #include <QDir>
-
-
-namespace {
-
-
-QStringList parseUrlsFromMultiline(const QString& text)
-{
-    QStringList out;
-    const QStringList rawLines = text.split(QChar('\n'));
-
-    for (QString line : rawLines) {
-        line = line.trimmed();
-
-        if (line.isEmpty())
-            continue;
-
-        if (!line.startsWith("http://", Qt::CaseInsensitive)
-            && !line.startsWith("https://", Qt::CaseInsensitive)) {
-            line = "https://" + line;
-        }
-
-        const QUrl u = QUrl::fromUserInput(line);
-
-        if (u.isValid() && !u.scheme().isEmpty())
-            out.append(u.toString());
-    }
-
-    return out;
-}
-
-
-} // namespace
 
 
 OzonRadarScraper::OzonRadarScraper()
@@ -81,7 +50,7 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     fetchScriptPath_ = resolveFetchScriptPath();
     stopRequested_ = false;
 
-    const QStringList urls = parseUrlsFromMultiline(urlStr);
+    const QStringList urls = UrlInputParser::parseMultiline(urlStr);
     if (urls.isEmpty()) {
         emit finishedWithError("Некорректные URL. Укажите по одной ссылке в строке.");
         return;
