@@ -1,11 +1,11 @@
 #pragma once
 
+#include "ozon_scraper/pythonfetchprocessrunner.h"
 #include "ozon_scraper/productaccumulator.h"
 #include "product.h"
 
 #include <QElapsedTimer>
 #include <QObject>
-#include <QProcess>
 #include <QStringList>
 #include <QUrl>
 #include <QVector>
@@ -28,8 +28,8 @@ signals:
     void finishedWithError(const QString& message);
 
 private slots:
-    void onProcessStdout();
-    void onProcessFinished(int exitCode, QProcess::ExitStatus status);
+    void onProcessStdout(const QByteArray& chunk);
+    void onProcessFinished(int exitCode, QProcess::ExitStatus status, const QString& stderrText);
 
 private:
     QString resolveFetchScriptPath() const;
@@ -40,7 +40,7 @@ private:
     void finishWithError(const QString& message);
     void finishWithSuccess();
 
-    QProcess* process_ = nullptr;
+    PythonFetchProcessRunner* processRunner_ = nullptr;
     QByteArray stdoutBuffer_;
     QElapsedTimer elapsedTimer_;
 

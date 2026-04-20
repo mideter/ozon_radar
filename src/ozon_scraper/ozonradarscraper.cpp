@@ -5,7 +5,6 @@
 
 #include <QCoreApplication>
 #include <QDir>
-#include <QFileInfo>
 
 
 namespace {
@@ -41,10 +40,11 @@ QStringList parseUrlsFromMultiline(const QString& text)
 
 
 OzonRadarScraper::OzonRadarScraper()
-    : process_(new QProcess(this))
+    : processRunner_(new PythonFetchProcessRunner(this))
 {
-    connect(process_, &QProcess::readyReadStandardOutput, this, &OzonRadarScraper::onProcessStdout);
-    connect(process_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+    connect(processRunner_, &PythonFetchProcessRunner::stdoutChunk,
+            this, &OzonRadarScraper::onProcessStdout);
+    connect(processRunner_, &PythonFetchProcessRunner::finished,
             this, &OzonRadarScraper::onProcessFinished);
 }
 
@@ -81,13 +81,6 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
 {
     fetchScriptPath_ = resolveFetchScriptPath();
 
-    if (!QFileInfo::exists(fetchScriptPath_)) {
-        emit finishedWithError(
-            "Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите "
-            "scripts/ozon_fetch.py рядом с приложением.");
-        return;
-    }
-
     const QStringList urls = parseUrlsFromMultiline(urlStr);
     if (urls.isEmpty()) {
         emit finishedWithError("Некорректные URL. Укажите по одной ссылке в строке.");
@@ -106,18 +99,6 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     pythonExe_ = qEnvironmentVariable("OZON_PYTHON", "python3");
 
     launchCurrentUrlFetch();
-
-    if (!process_->waitForStarted(5000)) {
-        if (process_->state() != QProcess::NotRunning) {
-            process_->kill();
-            process_->waitForFinished(2000);
-        }
-        allUrls_.clear();
-        emit finishedWithError(
-            QString("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
-                    "(см. README).")
-                .arg(pythonExe_));
-    }
 }
 
 
@@ -131,24 +112,36 @@ void OzonRadarScraper::launchCurrentUrlFetch()
     else
         emit statusChanged("Загрузка страницы...", -1, 0);
 
-    QStringList args;
-    args << fetchScriptPath_ << allUrls_;
-    process_->start(pythonExe_, args);
+    const PythonFetchStartStatus startStatus =
+        processRunner_->startFetch(pythonExe_, fetchScriptPath_, allUrls_);
+
+    if (startStatus == PythonFetchStartStatus::ScriptNotFound) {
+        allUrls_.clear();
+        emit finishedWithError(
+            "Не найден скрипт ozon_fetch.py. Укажите OZON_FETCH_SCRIPT или положите "
+            "scripts/ozon_fetch.py рядом с приложением.");
+        return;
+    }
+
+    if (startStatus == PythonFetchStartStatus::StartFailed) {
+        allUrls_.clear();
+        emit finishedWithError(
+            QString("Не удалось запустить Python (%1). Установите Python 3 и зависимости "
+                    "(см. README).")
+                .arg(pythonExe_));
+    }
 }
 
 
 void OzonRadarScraper::stop()
 {
-    if (process_->state() != QProcess::NotRunning) {
-        process_->kill();
-        process_->waitForFinished(3000);
-    }
+    processRunner_->stop(3000);
 }
 
 
-void OzonRadarScraper::onProcessStdout()
+void OzonRadarScraper::onProcessStdout(const QByteArray& chunk)
 {
-    appendStdout(process_->readAllStandardOutput());
+    appendStdout(chunk);
 }
 
 
@@ -191,12 +184,10 @@ void OzonRadarScraper::handleJsonLine(const QByteArray& line)
 }
 
 
-void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status)
+void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus status, const QString& stderrText)
 {
-    appendStdout(process_->readAllStandardOutput());
-
     if (status != QProcess::NormalExit || exitCode != 0) {
-        QString err = QString::fromUtf8(process_->readAllStandardError()).trimmed();
+        QString err = stderrText;
         if (err.isEmpty())
             err = QStringLiteral("Процесс Python завершился с ошибкой (код %1).").arg(exitCode);
         finishWithError(err);
@@ -227,10 +218,7 @@ void OzonRadarScraper::onExtractResult(const QByteArray& json)
 
 void OzonRadarScraper::finishWithError(const QString& message)
 {
-    if (process_->state() != QProcess::NotRunning) {
-        process_->kill();
-        process_->waitForFinished(2000);
-    }
+    processRunner_->stop(2000);
 
     stdoutBuffer_.clear();
     emit finishedWithError(message);
