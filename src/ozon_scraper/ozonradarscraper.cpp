@@ -30,12 +30,11 @@ void OzonRadarScraper::start(const QString& urlStr, int minPoints, int maxPoints
     try {
         urls = UrlInputParser::parseMultiline(urlStr);
     } catch (const std::exception& ex) {
-        emit finishedWithError(QString::fromUtf8(ex.what()));
+        emit finishedWithError(ex.what());
         return;
     }
 
     allUrls_ = urls;
-    urlSessionCount_ = urls.size();
     minPoints_ = minPoints;
     maxPoints_ = maxPoints;
     productAccumulator_.reset();
@@ -164,5 +163,5 @@ void OzonRadarScraper::finishWithSuccess()
     fetchEventParser_.reset();
 
     emit topProductsUpdated(top, total);
-    emit finishedSuccessfully(total, elapsed, urlSessionCount_);
+    emit finishedSuccessfully(total, elapsed, allUrls_.size());
 }
