@@ -1,6 +1,7 @@
 #include "ozon_scraper/batchproductmapper.h"
 #include "ozon_scraper/ozonradarscraper.h"
 #include "ozon_scraper/fetcheventparser.h"
+#include "ozon_scraper/productaccumulator.h"
 #include "ozon_scraper/scraperresultutils.h"
 
 #include <exception>
@@ -28,8 +29,8 @@ try {
 
     settings_ = OzonRadarScraperSettings(urlStr, minPoints, maxPoints);
 
-    productAccumulator_.reset();
-    fetchEventParser_ = FetchEventParser();
+    productAccumulator_ = ProductAccumulator{};
+    fetchEventParser_ = FetchEventParser{};
     elapsedTimer_.start();
 
     launchCurrentUrlFetch();
@@ -117,13 +118,17 @@ void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus stat
 void OzonRadarScraper::onExtractResult(const QByteArray& json)
 {
     const QVector<Product> batch =
-        BatchProductMapper::mapBatchJson(json, productAccumulator_.totalCount() + 1);
-    const ProductAccumulatorAddResult addResult = productAccumulator_.addBatch(batch);
+        BatchProductMapper::mapBatchJson(json, productAccumulator_->totalCount() + 1);
+
+    const ProductAccumulatorAddResult addResult = productAccumulator_->addBatch(batch);
 
     if (addResult.addedCount > 0) {
         const int n = addResult.totalCount;
+        
         const QVector<Product> top =
-            ScraperResultUtils::computeTopProducts(productAccumulator_.allProducts(), settings_->minPoints(), settings_->maxPoints());
+            ScraperResultUtils::computeTopProducts(productAccumulator_->allProducts(), 
+            settings_->minPoints(), settings_->maxPoints());
+
         emit statusChanged(QStringLiteral("Найдено товаров: %1").arg(n), n, addResult.lastPrice);
         emit topProductsUpdated(top, n);
     }
@@ -142,9 +147,12 @@ void OzonRadarScraper::finishWithError(const QString& message)
 void OzonRadarScraper::finishWithSuccess()
 {
     stopRequested_ = false;
+    
     const QVector<Product> top =
-        ScraperResultUtils::computeTopProducts(productAccumulator_.allProducts(), settings_->minPoints(), settings_->maxPoints());
-    const int total = productAccumulator_.totalCount();
+        ScraperResultUtils::computeTopProducts(productAccumulator_->allProducts(),
+            settings_->minPoints(), settings_->maxPoints());
+    
+    const int total = productAccumulator_->totalCount();
     const QString elapsed = ScraperResultUtils::formatElapsedText(elapsedTimer_.elapsed());
 
     emit topProductsUpdated(top, total);

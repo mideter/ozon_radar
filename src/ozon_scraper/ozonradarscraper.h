@@ -43,7 +43,7 @@ private:
     PythonFetchProcessRunner* processRunner_ = nullptr;
     std::optional<FetchEventParser> fetchEventParser_;
     QElapsedTimer elapsedTimer_;
-    ProductAccumulator productAccumulator_;
+    std::optional<ProductAccumulator> productAccumulator_;
 
     std::optional<OzonRadarScraperSettings> settings_;
     
