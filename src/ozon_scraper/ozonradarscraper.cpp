@@ -1,5 +1,6 @@
 #include "ozon_scraper/batchproductmapper.h"
 #include "ozon_scraper/ozonradarscraper.h"
+#include "ozon_scraper/fetcheventparser.h"
 #include "ozon_scraper/scraperresultutils.h"
 
 #include <exception>
@@ -28,7 +29,7 @@ try {
     settings_ = OzonRadarScraperSettings(urlStr, minPoints, maxPoints);
 
     productAccumulator_.reset();
-    fetchEventParser_.reset();
+    fetchEventParser_ = FetchEventParser();
     elapsedTimer_.start();
 
     launchCurrentUrlFetch();
@@ -40,7 +41,6 @@ catch (const std::exception& ex) {
 
 void OzonRadarScraper::launchCurrentUrlFetch()
 {
-    fetchEventParser_.reset();
     const QStringList urls = settings_->urls();
     const int total = urls.size();
 
@@ -66,7 +66,7 @@ void OzonRadarScraper::stop()
 
 void OzonRadarScraper::onProcessStdout(const QByteArray& chunk)
 {
-    const QVector<FetchEvent> events = fetchEventParser_.parseChunk(chunk);
+    const QVector<FetchEvent> events = fetchEventParser_->parseChunk(chunk);
     for (const FetchEvent& event : events)
         handleFetchEvent(event);
 }
@@ -98,7 +98,6 @@ void OzonRadarScraper::onProcessFinished(int exitCode, QProcess::ExitStatus stat
 {
     if (stopRequested_) {
         stopRequested_ = false;
-        fetchEventParser_.reset();
         emit finishedWithError(QStringLiteral("Загрузка остановлена пользователем."));
         return;
     }
@@ -136,7 +135,6 @@ void OzonRadarScraper::finishWithError(const QString& message)
     stopRequested_ = false;
     processRunner_->stop(2000);
 
-    fetchEventParser_.reset();
     emit finishedWithError(message);
 }
 
@@ -148,8 +146,6 @@ void OzonRadarScraper::finishWithSuccess()
         ScraperResultUtils::computeTopProducts(productAccumulator_.allProducts(), settings_->minPoints(), settings_->maxPoints());
     const int total = productAccumulator_.totalCount();
     const QString elapsed = ScraperResultUtils::formatElapsedText(elapsedTimer_.elapsed());
-
-    fetchEventParser_.reset();
 
     emit topProductsUpdated(top, total);
     emit finishedSuccessfully(total, elapsed, settings_->urls().size());

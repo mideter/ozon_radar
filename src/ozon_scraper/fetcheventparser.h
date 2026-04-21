@@ -4,6 +4,7 @@
 #include <QString>
 #include <QVector>
 
+
 struct FetchEvent
 {
     enum class Type {
@@ -21,11 +22,11 @@ struct FetchEvent
     QString errorMessage;
 };
 
+
 class FetchEventParser
 {
 public:
     QVector<FetchEvent> parseChunk(const QByteArray& chunk);
-    void reset();
 
 private:
     static FetchEvent parseLine(const QByteArray& line);

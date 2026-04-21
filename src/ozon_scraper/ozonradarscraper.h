@@ -41,7 +41,7 @@ private:
     void finishWithSuccess();
 
     PythonFetchProcessRunner* processRunner_ = nullptr;
-    FetchEventParser fetchEventParser_;
+    std::optional<FetchEventParser> fetchEventParser_;
     QElapsedTimer elapsedTimer_;
     ProductAccumulator productAccumulator_;
 
