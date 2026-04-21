@@ -40,12 +40,13 @@ private:
     void finishWithError(const QString& message);
     void finishWithSuccess();
 
-    PythonFetchProcessRunner* processRunner_ = nullptr;
+    PythonFetchProcessRunner processRunner_;
+    
     std::optional<FetchEventParser> fetchEventParser_;
-    QElapsedTimer elapsedTimer_;
     std::optional<ProductAccumulator> productAccumulator_;
 
     std::optional<OzonRadarScraperSettings> settings_;
+    QElapsedTimer elapsedTimer_;
     
     bool stopRequested_ = false;
 };

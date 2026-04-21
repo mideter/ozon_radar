@@ -8,11 +8,11 @@
 
 
 OzonRadarScraper::OzonRadarScraper()
-    : processRunner_(new PythonFetchProcessRunner(this))
+    : processRunner_{this}
 {
-    connect(processRunner_, &PythonFetchProcessRunner::stdoutChunk,
+    connect(&processRunner_, &PythonFetchProcessRunner::stdoutChunk,
             this, &OzonRadarScraper::onProcessStdout);
-    connect(processRunner_, &PythonFetchProcessRunner::finished,
+    connect(&processRunner_, &PythonFetchProcessRunner::finished,
             this, &OzonRadarScraper::onProcessFinished);
 }
 
@@ -51,7 +51,7 @@ void OzonRadarScraper::launchCurrentUrlFetch()
         emit statusChanged("Загрузка страницы...", -1, 0);
 
     try {
-        processRunner_->startFetch(urls);
+        processRunner_.startFetch(urls);
     } catch (const std::exception& ex) {
         emit finishedWithError(QString::fromUtf8(ex.what()));
     }
@@ -61,7 +61,7 @@ void OzonRadarScraper::launchCurrentUrlFetch()
 void OzonRadarScraper::stop()
 {
     stopRequested_ = true;
-    processRunner_->stop(3000);
+    processRunner_.stop(3000);
 }
 
 
@@ -138,7 +138,7 @@ void OzonRadarScraper::onExtractResult(const QByteArray& json)
 void OzonRadarScraper::finishWithError(const QString& message)
 {
     stopRequested_ = false;
-    processRunner_->stop(2000);
+    processRunner_.stop(2000);
 
     emit finishedWithError(message);
 }
