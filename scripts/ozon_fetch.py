@@ -19,6 +19,8 @@ from page_loader import PageLoader
 from scroller import Scroller
 from tile_snapshot import tile_html_and_url
 
+import undetected_chromedriver as uc
+
 _stop_requested = False
 
 
@@ -78,21 +80,6 @@ def collect_new_tiles(
     return out
 
 
-def _check_access_blocked(driver) -> None:
-    title = driver.title or ""
-    body_text = ""
-    try:
-        body = driver.find_element("tag name", "body")
-        body_text = (body.text or "")[:500]
-    except Exception:
-        pass
-    if "Доступ ограничен" in title or "доступ ограничен" in body_text.lower():
-        emit_error(
-            "Ozon ограничивает доступ с вашей сети. Попробуйте: отключить VPN, "
-            "подключиться к другой сети (Wi‑Fi/мобильный интернет) или перезагрузить роутер."
-        )
-
-
 def scrape_one_listing_url(driver, url: str) -> None:
     """Одна страница выдачи: загрузка, скролл, батчи в stdout. Драйвер не закрывается."""
     _ensure_not_stopped()
@@ -100,10 +87,6 @@ def scrape_one_listing_url(driver, url: str) -> None:
     page_loader.load(url)
 
     time.sleep(0.5)
-    _check_access_blocked(driver)
-    time.sleep(2)
-    page_loader.wait_for_products()
-
     finder = ElementFinder(driver)
     scroller = Scroller(driver)
     seen_urls: Set[str] = set()
@@ -112,48 +95,45 @@ def scrape_one_listing_url(driver, url: str) -> None:
     emit_batch(new_items)
 
     last_height = scroller.get_page_height()
+
     while True:
         _ensure_not_stopped()
         new_height, _ = scroller.scroll_and_wait(last_height)
         new_items = collect_new_tiles(driver, finder, seen_urls)
         emit_batch(new_items)
+
         if new_height == last_height:
             if new_items:
                 last_height = new_height
                 continue
             break
+        
         last_height = new_height
 
 
 def run(urls: List[str]) -> None:
-    if not urls:
-        emit_error("Не переданы URL.")
-    try:
-        import undetected_chromedriver as uc
-    except ImportError:
-        emit_error(
-            "Не установлен undetected-chromedriver. "
-            "Установите: sudo apt install python3-undetected-chromedriver"
-        )
-
     options = uc.ChromeOptions()
     maj = detect_chrome_major_version()
+    
     driver = (
         uc.Chrome(options=options, version_main=maj)
         if maj is not None
         else uc.Chrome(options=options)
     )
+
     try:
         try:
             driver.minimize_window()
-        except Exception:
+        except Exception as ex:
             pass
 
         total_urls = len(urls)
+
         for idx, url in enumerate(urls, start=1):
             _ensure_not_stopped()
             scrape_one_listing_url(driver, url)
             emit_progress(idx, total_urls)
+
         print(json.dumps({"type": "done"}, ensure_ascii=False), flush=True)
     finally:
         driver.quit()
@@ -170,6 +150,10 @@ def main() -> int:
         help="Один или несколько URL категории или поиска Ozon (один браузер на всю сессию)",
     )
     args = argp.parse_args()
+    
+    if not args.urls:
+        emit_error("Не переданы URL.")
+
     try:
         run(args.urls)
     except KeyboardInterrupt:

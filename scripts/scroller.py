@@ -2,8 +2,6 @@
 import time
 from typing import Tuple
 
-EXTRA_WAIT_WHEN_HEIGHT_UNCHANGED = (0.5, 1.0, 1.5)
-
 
 class Scroller:
     """Класс для управления прокруткой страницы."""
@@ -20,13 +18,10 @@ class Scroller:
         new_height = self.driver.execute_script("return document.body.scrollHeight")
 
         if new_height == last_height:
-            for extra_sec in EXTRA_WAIT_WHEN_HEIGHT_UNCHANGED:
-                time.sleep(extra_sec)
-                new_height = self.driver.execute_script(
-                    "return document.body.scrollHeight"
-                )
-                if new_height != last_height:
-                    break
+            time.sleep(0.5)
+            new_height = self.driver.execute_script(
+                "return document.body.scrollHeight"
+            )
 
         wait_time = time.time() - wait_start
         return new_height, wait_time
